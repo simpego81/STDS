@@ -1,0 +1,35 @@
+.graph-visualization {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+}
+
+.graph-visualization svg {
+  border: 1px solid #e1e1e1;
+  border-radius: 4px;
+}
+
+.node {
+  cursor: pointer;
+}
+
+.node circle {
+  transition: all 0.3s;
+}
+
+.node:hover circle {
+  stroke-width: 3;
+  filter: brightness(1.2);
+}
+
+.link {
+  transition: stroke 0.3s;
+}
+
+.node:hover ~ .link {
+  stroke: #333;
+  stroke-width: 2;
+}

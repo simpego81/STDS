@@ -1,0 +1,107 @@
+.App {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.App-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.status-indicator {
+  font-size: 14px;
+}
+
+.status-indicator span {
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-disconnected {
+  background-color: #F44336;
+}
+
+.status-connected {
+  background-color: #2196F3;
+}
+
+.status-initialized {
+  background-color: #9C27B0;
+}
+
+.status-data_loaded {
+  background-color: #FF9800;
+}
+
+.status-trained {
+  background-color: #4CAF50;
+}
+
+.main-container {
+  display: flex;
+  height: calc(100vh - 80px);
+}
+
+.control-section {
+  width: 300px;
+  background-color: white;
+  border-right: 1px solid #ddd;
+  overflow-y: auto;
+}
+
+.visualization-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.graph-container,
+.chart-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.graph-container {
+  flex: 1;
+  min-height: 400px;
+}
+
+.chart-container {
+  flex: 1;
+  min-height: 400px;
+}
+
+.graph-container h2,
+.chart-container h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 18px;
+  color: #333;
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}

@@ -1,0 +1,15 @@
+{
+  "name": "stds-tests",
+  "version": "1.0.0",
+  "description": "Tests for STDS framework",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000
+  }
+}
