@@ -1,0 +1,91 @@
+@startuml STDS Component Diagram
+
+skinparam componentStyle rectangle
+
+title Component Diagram - STDS Architecture
+
+actor "Trader" as trader
+actor "Administrator" as admin
+
+package "Frontend Layer" {
+  [React Application] as react_app
+  [D3.js Visualization] as d3_viz
+  [Lightweight Charts] as charts
+  [Socket.io Client] as socket_client
+}
+
+package "Server Layer" {
+  [Express Server] as express_server
+  [Socket.io Server] as socket_server
+  [API Controller] as api_controller
+}
+
+package "Integration Layer" {
+  [N-API Bindings] as napi_bindings
+  [STDSEngineWrapper] as wrapper
+}
+
+package "Core Layer" {
+  [STDSEngine] as engine
+  [Normalizer] as normalizer
+  [SequenceTree] as tree
+  [SequenceNode] as node
+}
+
+database "CSV Files" as csv_data
+database "Log Files" as logs
+
+' User interactions
+trader --> react_app : Uses (HTTPS)
+admin --> express_server : Monitors (HTTPS)
+
+' Frontend internal
+react_app --> d3_viz : Renders tree
+react_app --> charts : Displays charts
+react_app --> socket_client : Communicates
+
+' Frontend to Server
+socket_client --> socket_server : WebSocket
+react_app --> express_server : REST API
+
+' Server internal
+socket_server --> api_controller : Delegates
+express_server --> api_controller : Routes
+
+' Server to Bindings
+api_controller --> napi_bindings : Calls
+socket_server --> napi_bindings : Invokes
+
+' Bindings to Core
+napi_bindings --> wrapper : Uses
+wrapper --> engine : Wraps
+
+' Core internal
+engine --> normalizer : Uses
+engine --> tree : Manages
+tree --> node : Contains
+
+' Data flow
+engine --> csv_data : Reads
+express_server --> logs : Writes
+
+' Real-time updates
+tree ..> socket_server : Notifies (callbacks)
+
+note right of napi_bindings
+  N-API provides stable ABI
+  for native C++ integration
+end note
+
+note right of tree
+  Suffix-Tree with O(n) insertion
+  and O(sequence_length) query
+end note
+
+note right of normalizer
+  Deterministic quantization:
+  - Fit on historical data
+  - Transform to symbols
+end note
+
+@enduml

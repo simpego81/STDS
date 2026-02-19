@@ -1,0 +1,124 @@
+@startuml STDS Training Sequence Diagram
+
+title Training Workflow - STDS Framework
+
+actor Trader
+participant "React UI" as UI
+participant "Socket.io\nClient" as SocketClient
+participant "Socket.io\nServer" as SocketServer
+participant "API\nController" as API
+participant "N-API\nBindings" as NAPI
+participant "STDSEngine" as Engine
+participant "Normalizer" as Normalizer
+participant "SequenceTree" as Tree
+database "CSV Data" as CSV
+
+== Initialization ==
+
+Trader -> UI: Configure parameters
+activate UI
+UI -> UI: Set config\n(bins, threshold, etc.)
+UI -> SocketClient: emit('initialize', config)
+activate SocketClient
+SocketClient -> SocketServer: WebSocket: initialize
+activate SocketServer
+SocketServer -> NAPI: new STDSEngine(config)
+activate NAPI
+NAPI -> Engine: Create engine instance
+activate Engine
+Engine -> Normalizer: Create normalizer(num_bins)
+activate Normalizer
+Engine -> Tree: Create tree(confidence_threshold)
+activate Tree
+Tree --> Engine: Tree created
+Normalizer --> Engine: Normalizer created
+Engine --> NAPI: Engine instance
+NAPI --> SocketServer: Success
+SocketServer --> SocketClient: emit('initialized', {success: true})
+SocketClient --> UI: Update status: "initialized"
+UI --> Trader: Show "Initialized"
+deactivate UI
+
+== Data Loading ==
+
+Trader -> UI: Click "Load Data"
+activate UI
+UI -> SocketClient: emit('loadData', {filename})
+SocketClient -> SocketServer: WebSocket: loadData
+SocketServer -> NAPI: engine.loadData(path)
+NAPI -> Engine: loadData(filename)
+Engine -> CSV: Read CSV file
+activate CSV
+CSV --> Engine: OHLCV records
+deactivate CSV
+Engine -> Normalizer: fit(historical_data)
+Normalizer -> Normalizer: Calculate log-returns
+Normalizer -> Normalizer: Compute quantiles
+Normalizer -> Normalizer: Set bin edges
+Normalizer --> Engine: Fitted
+Engine --> NAPI: true (success)
+NAPI --> SocketServer: Success
+SocketServer --> SocketClient: emit('dataLoaded', {success: true})
+SocketClient --> UI: Update status: "data_loaded"
+UI --> Trader: Show "Data Loaded"
+deactivate UI
+
+== Model Training ==
+
+Trader -> UI: Click "Train Model"
+activate UI
+UI -> SocketClient: emit('train')
+SocketClient -> SocketServer: WebSocket: train
+SocketServer -> NAPI: engine.train()
+NAPI -> Engine: train()
+
+loop For each sequence in historical data
+  Engine -> Normalizer: transform(log_return)
+  Normalizer --> Engine: symbol
+  Engine -> Engine: Build sequence window
+  Engine -> Engine: checkProfitability(index, buy)
+  Engine -> Engine: checkProfitability(index, sell)
+  Engine -> Tree: insertSequence(sequence, buy_signal, sell_signal)
+  Tree -> Tree: Traverse/create nodes
+  Tree -> Tree: Update node weights
+  Tree -> Tree: Update statistics
+  Tree -> Tree: calculateSynthesis()
+  
+  alt Node created
+    Tree -> SocketServer: NodeCallback(node)
+    SocketServer --> SocketClient: emit('NODE_CREATED', node)
+    SocketClient --> UI: Update visualization
+  end
+  
+  Tree --> Engine: Sequence inserted
+end
+
+Engine -> Tree: toJSON()
+Tree -> Tree: Serialize tree structure
+Tree --> Engine: JSON string
+Engine --> NAPI: Training complete
+NAPI --> SocketServer: Success + tree JSON
+SocketServer --> SocketClient: emit('trainComplete', {tree})
+SocketClient --> UI: Update tree visualization
+UI --> Trader: Show "Training Complete"
+deactivate UI
+deactivate Engine
+deactivate Normalizer
+deactivate Tree
+deactivate NAPI
+deactivate SocketServer
+deactivate SocketClient
+
+note over Engine, Tree
+  Training complexity: O(n * sequence_length)
+  where n = number of historical data points
+end note
+
+note over Tree
+  Synthesis calculation:
+  S(n) = BUY if buy_wins/visits > τ
+  S(n) = SELL if sell_wins/visits > τ
+  S(n) = NONE otherwise
+end note
+
+@enduml

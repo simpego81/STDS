@@ -1,0 +1,134 @@
+@startuml STDS Core Class Diagram
+
+!define C++CLASS class
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "stds::core" {
+
+  class OHLCV {
+    + double open
+    + double high
+    + double low
+    + double close
+    + double volume
+  }
+
+  class Stats {
+    + uint32_t buy_wins
+    + uint32_t sell_wins
+    + uint32_t hold_count
+  }
+
+  class SequenceNode {
+    + uint32_t id
+    + int symbol
+    + uint64_t weight
+    + map<int, SequenceNode*> children
+    + Stats stats
+    + string synthesis
+    --
+    + SequenceNode(uint32_t id, int symbol)
+    + ~SequenceNode()
+  }
+
+  class Normalizer {
+    - int num_bins_
+    - vector<double> bin_edges_
+    --
+    + Normalizer(int num_bins = 10)
+    + {static} double calculateLogReturn(double prev, double curr)
+    + void fit(const vector<OHLCV>& data)
+    + int transform(double log_return) const
+    + int getNumBins() const
+    + const vector<double>& getBinEdges() const
+  }
+
+  class SequenceTree {
+    - SequenceNode* root_
+    - uint32_t next_id_
+    - double confidence_threshold_
+    - NodeCallback node_callback_
+    --
+    + SequenceTree(double threshold = 0.70)
+    + ~SequenceTree()
+    + void insertSequence(const vector<int>&, bool buy, bool sell)
+    + string query(const vector<int>&) const
+    + const SequenceNode* getRoot() const
+    + void setNodeCallback(NodeCallback)
+    + uint32_t getNodeCount() const
+    + string toJSON() const
+    - void calculateSynthesis(SequenceNode*)
+    - void serializeNode(const SequenceNode*, string&, bool) const
+  }
+
+  class STDSConfig {
+    + int num_bins
+    + int sequence_length
+    + double confidence_threshold
+    + int lookahead_days
+    + double take_profit_threshold
+  }
+
+  class STDSEngine {
+    - STDSConfig config_
+    - Normalizer normalizer_
+    - SequenceTree tree_
+    - vector<OHLCV> historical_data_
+    - vector<int> symbol_sequence_
+    --
+    + STDSEngine(const STDSConfig&)
+    + bool loadData(const string& filename)
+    + void train()
+    + string processNewData(const OHLCV&)
+    + const SequenceTree& getTree() const
+    + const Normalizer& getNormalizer() const
+    + void setNodeCallback(NodeCallback)
+    + string getTreeJSON() const
+    - bool checkProfitability(size_t idx, bool is_buy) const
+  }
+
+  ' Relationships
+  SequenceNode *-- Stats : contains
+  SequenceNode o-- SequenceNode : children
+  
+  SequenceTree o-- SequenceNode : root
+  SequenceTree ..> Stats : uses
+  
+  Normalizer ..> OHLCV : processes
+  
+  STDSEngine *-- STDSConfig : configuration
+  STDSEngine *-- Normalizer : normalizer
+  STDSEngine *-- SequenceTree : tree
+  STDSEngine ..> OHLCV : processes
+  
+  ' Notes
+  note right of SequenceNode
+    Each node represents a state
+    in the market sequence.
+    Weight = frequency of occurrence
+  end note
+
+  note right of Normalizer
+    Log-return quantization:
+    r_t = ln(C_t / C_{t-1})
+    Mapped to N discrete bins
+  end note
+
+  note right of SequenceTree
+    Suffix-like Tree structure.
+    Synthesis algorithm:
+    BUY if buy_wins/visits > τ
+    SELL if sell_wins/visits > τ
+    NONE otherwise
+  end note
+
+  note right of STDSEngine
+    Main orchestrator.
+    Coordinates normalization,
+    training, and querying.
+  end note
+}
+
+@enduml

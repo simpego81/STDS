@@ -1,0 +1,85 @@
+@startuml STDS Deployment Diagram
+
+title Deployment Diagram - STDS Framework
+
+node "Client Machine" as client {
+  node "Web Browser" as browser {
+    component "React Application" as react_app
+    component "D3.js Library" as d3_lib
+    component "Lightweight Charts" as charts_lib
+  }
+}
+
+node "Server Machine\n(Ubuntu 22.04)" as server_machine {
+  
+  node "Node.js Runtime\n(v22.13.0)" as nodejs_runtime {
+    component "Express Server" as express_app
+    component "Socket.io Server" as socket_server
+  }
+  
+  node "Native Layer\n(C++11)" as native_layer {
+    component "N-API Bindings" as napi_module
+    component "STDS Core Library" as stds_core
+  }
+  
+  database "CSV Files" as csv_data
+  database "Log Files" as logs
+}
+
+node "Build Environment" as build_tools {
+  component "CMake v3.22" as cmake
+  component "node-gyp v9.4" as node_gyp
+  component "GCC v11.4" as gcc
+}
+
+' Network connections
+react_app --> express_app : HTTPS/REST\n(Port 3001)
+react_app --> socket_server : WebSocket\n(Port 3001)
+
+' Internal connections
+express_app --> napi_module : Function calls
+socket_server --> napi_module : Function calls
+napi_module --> stds_core : Static linking
+stds_core --> csv_data : File I/O
+express_app --> logs : Logging
+
+' Build relationships
+cmake --> stds_core : Builds
+node_gyp --> napi_module : Builds
+gcc --> stds_core : Compiles
+gcc --> napi_module : Compiles
+
+note right of nodejs_runtime
+  **Dependencies:**
+  - express: ^4.18.2
+  - socket.io: ^4.6.1
+  - node-addon-api: ^5.0.0
+  
+  **Ports:**
+  - Server: 3001
+  - Frontend: 3000
+end note
+
+note right of stds_core
+  **Build Config:**
+  - Standard: C++11
+  - PIC: ON
+  - Library: libstds_core.a
+end note
+
+note right of napi_module
+  **N-API Features:**
+  - Thread-safe callbacks
+  - Stable ABI
+  - Zero-copy transfer
+end note
+
+note left of browser
+  **Frontend Stack:**
+  - React 19.2.4
+  - D3.js 7.9.0
+  - Lightweight Charts 5.1.0
+  - Socket.io Client 4.8.3
+end note
+
+@enduml

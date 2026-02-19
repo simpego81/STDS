@@ -1,0 +1,176 @@
+@startuml STDS Training Activity Diagram
+
+title Training Process - Activity Diagram
+
+|User|
+start
+:Click "Train Model";
+
+|System|
+:Validate engine state;
+
+if (Engine initialized and\ndata loaded?) then (yes)
+  :Start training process;
+  
+  |Normalizer|
+  :Retrieve fitted bin edges;
+  note right
+    Bin edges were calculated
+    during data loading phase
+  end note
+  
+  |Engine|
+  :Initialize sequence buffer;
+  :Set sequence index = 0;
+  
+  repeat
+    :Get next data point;
+    
+    |Normalizer|
+    :Calculate log-return;
+    note right
+      r_t = ln(C_t / C_{t-1})
+    end note
+    
+    :Transform to symbol;
+    note right
+      Find bin for log-return
+      using bin edges
+    end note
+    
+    |Engine|
+    :Add symbol to buffer;
+    
+    if (Buffer size >= sequence_length?) then (yes)
+      :Extract sequence window;
+      
+      fork
+        :Check buy profitability;
+        note right
+          Look ahead N days
+          Check if price increased
+          by threshold
+        end note
+      fork again
+        :Check sell profitability;
+        note right
+          Look ahead N days
+          Check if price decreased
+          by threshold
+        end note
+      end fork
+      
+      |SequenceTree|
+      :insertSequence(sequence, buy_signal, sell_signal);
+      
+      :Traverse tree following sequence;
+      
+      repeat
+        :Get current symbol from sequence;
+        
+        if (Child node exists\nfor symbol?) then (yes)
+          :Navigate to child node;
+        else (no)
+          :Create new node;
+          :Assign next ID;
+          :Set symbol;
+          :Initialize stats;
+          
+          |Socket.io|
+          :Emit NODE_CREATED event;
+          
+          |Frontend|
+          :Update D3.js visualization;
+          note right
+            Real-time tree expansion
+          end note
+        endif
+        
+        :Increment node weight;
+        
+      repeat while (More symbols in sequence?) is (yes)
+      ->no;
+      
+      |SequenceTree|
+      :Update final node statistics;
+      
+      if (buy_signal == true) then (yes)
+        :Increment buy_wins;
+      endif
+      
+      if (sell_signal == true) then (yes)
+        :Increment sell_wins;
+      endif
+      
+      if (no signals) then (yes)
+        :Increment hold_count;
+      endif
+      
+      :Calculate synthesis;
+      note right
+        S(n) = BUY if buy_wins/visits > τ
+        S(n) = SELL if sell_wins/visits > τ
+        S(n) = NONE otherwise
+      end note
+      
+    endif
+    
+    |Engine|
+    :Increment sequence index;
+    
+  repeat while (More data points?) is (yes)
+  ->no;
+  
+  :Training complete;
+  
+  |SequenceTree|
+  :Serialize tree to JSON;
+  
+  fork
+    :Calculate tree statistics;
+    note right
+      - Total nodes
+      - Max depth
+      - Branch factor
+    end note
+  fork again
+    :Generate JSON structure;
+    note right
+      Recursive serialization
+      of all nodes and children
+    end note
+  end fork
+  
+  |Socket.io|
+  :Emit trainComplete event;
+  
+  |Frontend|
+  fork
+    :Render complete tree;
+    :Apply force-directed layout;
+    :Color nodes by synthesis;
+  fork again
+    :Update status to "Trained";
+    :Enable process data button;
+  end fork
+  
+  |User|
+  :View trained model;
+  
+else (no)
+  |System|
+  :Display error message;
+  note right
+    "Engine not initialized"
+    or "Data not loaded"
+  end note
+  
+  |User|
+  :See error notification;
+endif
+
+stop
+
+
+
+@enduml

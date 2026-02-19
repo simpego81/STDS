@@ -198,6 +198,28 @@ Where τ is the confidence threshold (default 0.70).
 - Decision markers on the chart
 - Real-time decision timeline
 
+## Documentation
+
+### Architecture and Design
+
+Comprehensive UML documentation is available in the `docs/` directory:
+
+- **[UML Documentation](docs/UML_DOCUMENTATION.md)** - Complete architectural diagrams including:
+  - Use Case Diagram - Functional requirements and user interactions
+  - Class Diagram - C++ core structure and relationships
+  - Component Diagram - Layered architecture overview
+  - Deployment Diagram - Physical deployment and runtime environment
+  - Sequence Diagrams - Training and decision-making workflows
+  - State Diagram - Engine lifecycle and transitions
+  - Activity Diagram - Detailed training process flow
+
+All diagrams are available in both PlantUML source format and rendered PNG images.
+
+### Additional Documentation
+
+- **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Detailed implementation report with test results
+- **[README](docs/README.md)** - Documentation directory overview
+
 ## License
 
 MIT License

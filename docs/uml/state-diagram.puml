@@ -1,0 +1,134 @@
+@startuml STDS Engine State Diagram
+
+title STDS Engine Lifecycle State Machine
+
+[*] --> Disconnected
+
+state "Disconnected" as Disconnected {
+  Disconnected : No connection to server
+  Disconnected : UI disabled
+}
+
+state "Connected" as Connected {
+  Connected : WebSocket connection established
+  Connected : Ready for initialization
+}
+
+state "Initialized" as Initialized {
+  Initialized : Engine created with configuration
+  Initialized : Normalizer and Tree instantiated
+  Initialized : Ready to load data
+}
+
+state "Data Loaded" as DataLoaded {
+  DataLoaded : Historical OHLCV data loaded
+  DataLoaded : Normalizer fitted to data
+  DataLoaded : Bin edges calculated
+  DataLoaded : Ready for training
+}
+
+state "Training" as Training {
+  Training : Building Suffix-Tree
+  Training : Processing sequences
+  Training : Calculating profitability labels
+  Training : Real-time node creation events
+}
+
+state "Trained" as Trained {
+  Trained : Model ready for predictions
+  Trained : Tree structure complete
+  Trained : Can process new data
+  Trained : Can query decisions
+}
+
+state "Processing" as Processing {
+  Processing : Normalizing new data
+  Processing : Updating symbol sequence
+  Processing : Querying tree
+  Processing : Generating decision
+}
+
+state "Error" as Error {
+  Error : Exception occurred
+  Error : Error message displayed
+  Error : Requires user intervention
+}
+
+' Transitions
+Disconnected --> Connected : WebSocket\nconnection opened
+
+Connected --> Initialized : initialize(config)\n[config valid]
+Connected --> Error : initialize(config)\n[config invalid]
+
+Initialized --> DataLoaded : loadData(filename)\n[file exists & valid]
+Initialized --> Error : loadData(filename)\n[file not found or invalid]
+
+DataLoaded --> Training : train()
+DataLoaded --> Initialized : reconfigure()
+
+Training --> Trained : training complete\n[tree built]
+Training --> Error : training failed\n[exception]
+
+Trained --> Processing : processNewData(ohlcv)\n[data valid]
+Trained --> DataLoaded : reload data
+Trained --> Initialized : reset engine
+
+Processing --> Trained : decision generated\n[success]
+Processing --> Error : processing failed\n[exception]
+
+Error --> Connected : reconnect()
+Error --> Initialized : retry initialization
+Error --> DataLoaded : retry loading
+Error --> Trained : retry processing
+
+Trained --> [*] : shutdown
+
+' Internal transitions
+Trained : entry / emit('trained')
+Trained : do / enable query mode
+Trained : exit / cleanup resources
+
+Training : entry / emit('training_started')
+Training : do / for each sequence
+Training : do /   insertSequence()
+Training : do /   emit('NODE_CREATED')
+Training : exit / emit('training_complete')
+
+Processing : entry / start timer
+Processing : do / normalize data
+Processing : do / query tree
+Processing : do / emit('DECISION_TRIGGERED')
+Processing : exit / log latency
+
+note right of Training
+  Real-time updates:
+  - NODE_CREATED events
+  - Progress tracking
+  - Incremental visualization
+end note
+
+note right of Trained
+  Query mode:
+  - O(sequence_length) complexity
+  - < 10ms latency requirement
+  - Deterministic results
+end note
+
+note right of Processing
+  Decision flow:
+  1. Calculate log-return
+  2. Transform to symbol
+  3. Update sequence window
+  4. Query tree
+  5. Return synthesis
+end note
+
+note left of Error
+  Error handling:
+  - Display error message
+  - Log to console
+  - Allow retry or reset
+  - Preserve state when possible
+end note
+
+@enduml

@@ -1,0 +1,105 @@
+@startuml STDS Use Case Diagram
+
+!define RECTANGLE class
+
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+
+left to right direction
+
+actor "Trader" as trader
+actor "System Administrator" as admin
+actor "Data Provider" as data
+
+rectangle "STDS - Sequential Trading Decision System" {
+  
+  package "Configuration Management" {
+    usecase "Configure Engine Parameters" as UC1
+    usecase "Set Confidence Threshold" as UC2
+    usecase "Define Sequence Length" as UC3
+  }
+  
+  package "Data Management" {
+    usecase "Load Historical Data" as UC4
+    usecase "Validate CSV Format" as UC5
+    usecase "Normalize Market Data" as UC6
+  }
+  
+  package "Model Training" {
+    usecase "Train Suffix-Tree Model" as UC7
+    usecase "Calculate Profitability Labels" as UC8
+    usecase "Build Decision Tree" as UC9
+  }
+  
+  package "Trading Operations" {
+    usecase "Process New Market Data" as UC10
+    usecase "Generate Trading Decision" as UC11
+    usecase "Query Decision Tree" as UC12
+  }
+  
+  package "Visualization" {
+    usecase "View Tree Structure" as UC13
+    usecase "Monitor Real-time Updates" as UC14
+    usecase "Analyze Decision History" as UC15
+    usecase "View Performance Metrics" as UC16
+  }
+  
+  package "System Monitoring" {
+    usecase "Check System Health" as UC17
+    usecase "Monitor Latency" as UC18
+    usecase "Run Test Suite" as UC19
+  }
+}
+
+' Trader relationships
+trader --> UC1
+trader --> UC4
+trader --> UC7
+trader --> UC10
+trader --> UC13
+trader --> UC14
+trader --> UC15
+trader --> UC16
+
+' Admin relationships
+admin --> UC1
+admin --> UC17
+admin --> UC18
+admin --> UC19
+
+' Data Provider relationships
+data --> UC4
+
+' Include relationships
+UC1 ..> UC2 : <<include>>
+UC1 ..> UC3 : <<include>>
+
+UC4 ..> UC5 : <<include>>
+UC4 ..> UC6 : <<include>>
+
+UC7 ..> UC8 : <<include>>
+UC7 ..> UC9 : <<include>>
+
+UC10 ..> UC11 : <<include>>
+UC11 ..> UC12 : <<include>>
+
+UC14 ..> UC13 : <<extend>>
+
+' Notes
+note right of UC7
+  Training builds the Suffix-Tree
+  from historical patterns with
+  profitability labels
+end note
+
+note right of UC11
+  Decision based on confidence
+  threshold (default 70%)
+end note
+
+note right of UC18
+  Query latency must be
+  < 10ms per specification
+end note
+
+@enduml
